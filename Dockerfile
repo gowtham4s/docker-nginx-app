@@ -9,7 +9,7 @@ RUN mkdir -p /run/nginx
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy your HTML website into the nginx folder
-COPY . . /usr/share/nginx/html
+COPY ./index.html /usr/share/nginx/html
 
 EXPOSE 80
 
