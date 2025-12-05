@@ -1,47 +1,36 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('docker_hub')
-        IMAGE_NAME = "kritheshgow4/my_app"
-        CONTAINER_NAME = "gowtham"
+    stages{
+        stage('Git clone'){
+            steps {
+                git branch: 'main', url: 'https://github.com/gowtham4s/docker-nginx-app'
+        }
+        }
+        stage('Build Image'){
+        steps {
+                sh 'docker build -t kritheshgow4/gowtham:docker .'
+            }
+        }
+        stage('Login'){
+        steps {
+                withCredentials([string(credentialsId: 'docker_hub', variable: 'TOKEN')]) {
+                    sh 'echo "$TOKEN" | docker login -u "kritheshgow4" --password-stdin'
+                }
+            }
+        }
+        stage('Push Image'){
+        steps{
+                sh 'docker push kritheshgow4/gowtham:docker'
+            }
+        }
+        stage('Deploy'){
+    steps {
+        sh '''
+            docker stop gowtham_app || true
+            docker rm gowtham_app || true
+            docker run -d -p 80:80 --name gowtham_app kritheshgow4/gowtham:docker
+        '''
     }
-
-    stages {
-
-        stage('Build docker image') {
-            steps {
-                sh 'sudo docker build -t $IMAGE_NAME:$BUILD_NUMBER .'
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                sh '''
-                  echo $DOCKERHUB_CREDENTIALS_PSW | \
-                  sudo docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                '''
-            }
-        }
-
-        stage('Push image') {
-            steps {
-                sh 'sudo docker push $IMAGE_NAME:$BUILD_NUMBER'
-            }
-        }
-
-        stage('Run container') {
-            steps {
-                sh '''
-                  sudo docker stop $CONTAINER_NAME || true
-                  sudo docker rm $CONTAINER_NAME || true
-
-                  sudo docker run -d \
-                    --name $CONTAINER_NAME \
-                    -p 80:80 \
-                    $IMAGE_NAME:$BUILD_NUMBER
-                '''
-            }
-        }
+}
     }
 }
